@@ -1,0 +1,35 @@
+- hosts: imageme
+  become: yes
+  vars:
+    argument: YOUR_ARGUMENTS_HERE
+    google_cloud_api_key: YOUR_API_KEY_HERE
+    search_engine_id: YOUR_SEARCH_ENGINE_HERE
+  tasks:
+  - name: Install git
+    yum:
+      name: git
+      state: latest
+  - name: Clone repo
+    git:
+      repo: https://github.com/jkanclerz/google-search-python
+      dest: /home/ec2-user/google-search-python/
+  - name: Set api key and search engine id
+    lineinfile:
+      dest: "/etc/environment"
+      state: present
+      regexp: "^{{ item.key }}"
+      line: "{{ item.key }}={{ item.value}}"
+    with_items: "{{ environment }}"
+    environment:
+    - key: GOOGLE_CLOUD_API_KEY
+      value : "{{google_cloud_api_key}}"
+    - key: SEARCH_ENGINE_ID
+      value: "{{search_engine_id}}"
+  - name: Copy image_me.py script /bin/
+    copy:
+      dest: /bin/image_me
+      content: python2 /home/ec2-user/google-search-python/image_me.py
+  - name: Add execute permissions
+    file: dest=/bin/image_me mode=a+x
+  - name: Run image_me.py
+    shell: image_me {{ argument }}
